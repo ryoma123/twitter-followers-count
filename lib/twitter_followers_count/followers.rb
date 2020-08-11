@@ -8,13 +8,16 @@ require 'fileutils'
 
 module TwitterFollowersCount
   class Followers
-    def initialize(websites)
+    def initialize
       begin
         csv_data = CSV.read('./urls.csv')
       rescue StandardError => e
         puts e
         exit(1)
       end
+
+      # If necessary, add keywords to use.
+      domains = %w[twitter.com]
 
       dir_name = 'output'
       Dir.mkdir('./' + dir_name) unless Dir.exist?('./' + dir_name)
@@ -25,40 +28,40 @@ module TwitterFollowersCount
 
       File.open("./#{dir_name}/#{file_name}", 'w') do |file|
         csv_data.each do |data|
-          puts "Start [#{data[0]}]."
+          puts "Start [#{data[0]}]"
 
-          unless data[0] =~ /#{websites.join('|')}/i
+          uri = URI.parse(data[0])
+          account = uri.path.delete('/')
+
+          unless uri.host =~ /#{domains.join('|')}/i
             file.write("\n")
-            puts 'Skip.'
+            puts 'Skip'
             next
           end
 
-          account_pattern = %r(^https?:\/{2,}.*?(\/.*))
-          account = data[0].match(account_pattern)
-
-          if data[0] =~ /#{websites[0]}/i
-            followers = twitter_followers_count(account[1].delete('/'))
-          elsif data[0] =~ /#{websites[1]}/i
-            followers = sample_followers_count(account[1].delete('/'))
+          if uri.host =~ /#{domains[0]}/i
+            followers = twitter_followers_count(account)
+          elsif uri.host =~ /#{domains[1]}/i
+            followers = sample_followers_count(account)
           end
 
           file.write("#{followers}\n")
-          puts 'End.'
+          puts 'End'
         end
       end
-      puts 'Finish.'
+      puts 'Finish'
     end
 
     private
 
     def twitter_followers_count(account)
-      client = Twitter::REST::Client.new do |config|
+      @client ||= Twitter::REST::Client.new do |config|
         config.consumer_key    = ENV['TWITTER_CONSUMER_KEY']
         config.consumer_secret = ENV['TWITTER_CONSUMER_SECRET']
       end
 
       begin
-        user = client.user(account)
+        user = @client.user(account)
       rescue StandardError => e
         puts e
         exit(1)
@@ -69,8 +72,8 @@ module TwitterFollowersCount
     # If necessary, modify and use.
     def sample_followers_count(account)
       begin
-        uri = URI.parse('https://httpbin.org/json')
-        json = Net::HTTP.get(uri)
+        sample_uri = URI.parse('https://httpbin.org/json')
+        json = Net::HTTP.get(sample_uri)
         result = JSON.parse(json)
       rescue StandardError => e
         puts e
@@ -78,7 +81,7 @@ module TwitterFollowersCount
       end
 
       if result.empty?
-        puts 'User not found.'
+        puts "User not found. [#{account}]"
         exit(1)
       end
       result['slideshow']['title']
