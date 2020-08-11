@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+require 'twitter_followers_count'
+
+# If necessary, add keywords to use.
+websites = %w[twitter]
+TwitterFollowersCount::Followers.new(websites)
