@@ -1,5 +1,7 @@
 # twitter-followers-count
 
+[![Build Status](https://travis-ci.org/ryoma123/twitter-followers-count.svg?branch=master)](https://travis-ci.org/ryoma123/twitter-followers-count)
+
 Get the count of followers from the Twitter URLs.
 
 ## Installation
